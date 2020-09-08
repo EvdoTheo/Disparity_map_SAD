@@ -1,2 +1,2 @@
 # Disparity_map_SAD
-Creation of disparity map with the method od SAD (Sum of Absolute Differences).
+Creation of disparity map using SAD (Sum of Absolute Differences) .
