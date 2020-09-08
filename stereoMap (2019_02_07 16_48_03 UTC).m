@@ -1,83 +1,98 @@
-leftImage = imread('stereo_left.png');              %Reads Left Image
-rightImage = imread('stereo_right.png');            %Reads Right Image
+ clc
+clear all
+close all
+%turns left image to grayscale
+left=rgb2gray(imread( 'path\to\stereo_left.png')); 
+%reads left image
+left1=imread('path\to\stereo_left.png'); 
+%turns right image to grayscale
+right=rgb2gray(imread('path\to\stereo_right.png'));
 
-leftImage = mean(leftImage, 3);
-rightImage = mean(rightImage, 3);
-
-leftsmall = imread('stereo_left.png');
-rightsmall = imread('stereo_right.png');
-
-worsemap = disparitymap(leftsmall, rightsmall);     %Calculates DisparityMap
-
-badmap = disparity2reloaded(leftsmall, rightsmall); %Recalculates with less error
-
-dispmap = dispmap3ThisTimeItsPersonal(leftImage, rightImage);   %Last and Final Disparity Map
-
-figure;
-clf;
-
-
-
-subplot(2,2,1); imshow(leftImage,[0,255]); title('Original Black & White');
-a = max(max(worsemap));
-subplot(2,2,2); imshow(worsemap,[0,a]); title('Worse Map');
-a = max(max(badmap));
-subplot(2,2,3); imshow(badmap,[0,a]); title('Bad Map');
-a = max(max(dispmap));
-subplot(2,2,4); imshow(dispmap,[0,a]); title('Disparity Map');
-
-
-doubleDM = double(dispmap);                                     % Make dispMap double
-
-%% Next Mission !
-
-
-[sizex sizey sizez] = size(leftsmall);          %Create 3 Variables with the same size
-                                                %as the leftsmall image
-                                                
-final_1 = zeros(sizex , sizey, sizez);          %Create a blank image ready to be painted
- 
-
-%% Copying Algorithm! 
-%*************************************************************************
-%*** Copy And Paste the pixels that appear closest to camera *************
-%*** Based on the results of the 2 Dimensional Disparity Map *************
-%*************************************************************************
-
-for i=1:sizex                                   
-        for j=1:sizey
-            if doubleDM(i,j) > 13.5
-                for d=1:3 
-                    final_1(i,j,d) = leftsmall(i,j,d);               
-                end
+%% Calculates DisparityMap
+     [nrleft,ncleft]=size(left);
+     [nrright,ncright]=size(right);
+     %turn the type of the left and right image to double
+      left=im2double(left);
+      right=im2double(right);
+      window_s=3;
+      l=(window_s-1)/2;
+  sad=0;
+      pixels=0;
+      dispMin=0;
+      dispMax=18;
+      dismap=zeros(nrleft,ncleft);
+     for i=1+l:1:nrleft-l
+       for j=ncleft-l:-1:1+l+dispMax
+        sadmax=1000;
+        b_match=dispMin;
+        for p=dispMin:dispMax
+            Left_region=left(i-l:i+l,j-l:j+l);
+            Right_region=right(i-l:i+l,j-p-l:j-p+l);
+            sad=sum(sum(abs(Left_region-Right_region)));
+            if (sad<sadmax)
+                sadmax=sad;
+                b_match=p;
             end
         end
+       
+     dismap(i,j)=b_match;
+     pixels=pixels+1;
+       end
+     end
+[nr,nc]=size(dismap);
+figure
+imagesc(dismap); %%disparity Map color scaled
+
+%% Last part 
+[sizex,sizey,sizez] = size(left1); % create 3 variables equals to the size of the left image
+final_1 = zeros(sizex , sizey, 3); %blank image         
+
+
+for i=1:sizex
+for j=1:sizey
+if dismap(i,j) > 13.5
+for d=1:3 
+                    final_1(i,j,d) = left1(i,j,d);               
+end
+end
+end
 end
 
 
-[xSize ySize zSize] = size(leftsmall);
+[xSize,ySize,zSize] = size(left1);
 
 
-final_2 = zeros(xSize, ySize, zSize);
+final_2 = zeros(xSize, ySize, 3);
 
 
 
- 
-for i=1:xSize                                   
-        for j=1:ySize
-            if (doubleDM(i,j) > 9.8) && (doubleDM(i,j) < 13.0 )
-                for k=1:3 
-                    final_2(i,j,k) = leftsmall(i,j,k);               
-                end
-            end
-        end
+
+for i=1:xSize
+for j=1:ySize
+if (dismap(i,j) > 9.8) && (dismap(i,j) < 13.0 )
+for k=1:3 
+                    final_2(i,j,k) = left1(i,j,k);               
+end
+end
+end
 end
 
-
-
+final_1=medfilt3(final_1,[5 5 3]);
+final_2=medfilt3(final_2,[5 5 3]);
+% Display the outcomes
 figure;
 clf;
-subplot(2,2,1); imshow(leftsmall); title('left image to be copied');
-subplot(2,2,2); imshow(uint8(final_1)); title('Object closest to Camera');
-subplot(2,2,3); imshow(leftsmall); title('Right image to be copied');
-subplot(2,2,4); imshow(uint8(final_2)); title('Object between two distances');
+subplot(2,2,1); imshow(left); title('left image ');
+subplot(2,2,2); imshow(uint8(final_1)); title(' closest to Camera');
+subplot(2,2,3); imshow(left); title('Right image ');
+subplot(2,2,4); imshow(uint8(final_2)); title('second closest to Camera');
+
+
+
+
+
+
+
+
+
+
